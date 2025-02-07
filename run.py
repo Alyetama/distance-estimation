@@ -18,6 +18,7 @@ from sam import SAM
 from custom_types import DetectionSamplingMethod, MultipleAnimalReduction, SampleFrom, DepthEstimationModel
 from utils import calibrate, calibrate_v0, crop, resize, exception_to_str, get_calibration_frame_dist, get_extension_agnostic_path, multi_file_extension_glob, blur_and_downsample
 from visualization import visualize_detection, visualize_farthest_calibration_frame
+from tqdm import tqdm
 
 
 @dataclass
@@ -69,6 +70,7 @@ def run(config: Config):
 
         transect_dirs = sorted(glob.glob(os.path.join(config.data_dir, "transects", "*/")))
         for transect_idx, transect_dir in enumerate(transect_dirs):
+            print('Current transect dir:', transect_dir)
             transect_id = os.path.basename(os.path.normpath(transect_dir))
 
             yield StatusUpdate(transect_id, transect_idx, len(transect_dirs))
@@ -155,7 +157,7 @@ def run(config: Config):
                 multi_file_extension_glob(os.path.join(transect_dir, "detection_frames", "*"), config.intensity_image_extensions) +
                 multi_file_extension_glob(os.path.join(transect_dir, "detection_frames_cropped", "*"), config.intensity_image_extensions)  # for backwards compability. use crop configuration instead
             )))
-            for detection_idx, detection_frame_filename in enumerate(detection_frame_filenames):
+            for detection_idx, detection_frame_filename in enumerate(tqdm(detection_frame_filenames)):
                 detection_id = os.path.splitext(os.path.basename(detection_frame_filename))[0]
                 yield StatusUpdate(transect_id, transect_idx, len(transect_dirs), detection_id, detection_idx, len(detection_frame_filenames))
 

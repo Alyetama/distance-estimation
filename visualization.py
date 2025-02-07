@@ -46,32 +46,31 @@ def visualize_detection(*args, **kwargs):
 def visualize_farthest_calibration_frame_impl(data_dir, transect_id, farthest_calibration_frame_disp, min_depth, max_depth):
     import matplotlib
     import matplotlib.pyplot as plt
-    matplotlib.use("pdf")  # required for PyInstaller detection
+    #matplotlib.use("pdf")  # required for PyInstaller detection
+    calib_array = np.clip(farthest_calibration_frame_disp.data, max_depth ** -1, min_depth) ** -1
     plt.imshow(
-        np.clip(
-            farthest_calibration_frame_disp.data, max_depth ** -1, min_depth ** -1
-        )
-        ** -1,
+        calib_array,
         vmin=min_depth,
         vmax=max_depth,
         cmap="turbo",
     )
     plt.colorbar()
     plt.title("Final Calibration Frame Depth")
-    os.makedirs(os.path.join(data_dir, "results", "calibration"), exist_ok=True)
+    os.makedirs(os.path.join(data_dir, "results", "calibration_arrays"), exist_ok=True)
     plt.savefig(
-        os.path.join(data_dir, "results", "calibration", f"{transect_id}_calibration.pdf"),
+        os.path.join(data_dir, "results", "calibration", f"{transect_id}_calibration.jpg"),
         bbox_inches="tight",
         dpi=300,
         transparent=True,
     )
+    np.save(os.path.join(data_dir, "results", "calibration_arrays", f"{transect_id}_calibration.npy"), calib_array)
 
 
 def visualize_detection_impl(data_dir, detection_id, detection_frame, calibrated_depth_midas, farthest_calibration_frame_disp, boxes, masks, world_positions, sample_locations, draw_detection_ids, draw_world_position, min_depth, max_depth):
     import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.patches
-    matplotlib.use("pdf")  # required for PyInstaller detection
+    #matplotlib.use("pdf")  # required for PyInstaller detection
     scale = 2
     if farthest_calibration_frame_disp is not None:
         fig, (ax1, ax2, ax3) = plt.subplots(
@@ -147,7 +146,7 @@ def visualize_detection_impl(data_dir, detection_id, detection_frame, calibrated
 
     os.makedirs(os.path.join(data_dir, "results", "sampling"), exist_ok=True)
     plt.savefig(
-        os.path.join(data_dir, "results", "sampling", detection_id + ".pdf"),
+        os.path.join(data_dir, "results", "sampling", detection_id + ".jpg"),
         bbox_inches="tight",
         dpi=300,
         transparent=True,

@@ -17,8 +17,8 @@ class Config:
     crop_right: int = 0  # how many pixels to crop from the right of the images
 
     # camera parameters used to estimate the horizontal and vertical position of animals
-    camera_horizontal_fov: float = 40  # horizontal field of view of the camera trap in degrees
-    camera_vertical_fov: float  = 30  # vertical field of view of the camera trap in degrees
+    camera_horizontal_fov: float = 40.0  # horizontal field of view of the camera trap in degrees
+    camera_vertical_fov: float  = 30.0  # vertical field of view of the camera trap in degrees
 
     # file extension parameters
     depth_image_extensions: List[str] = field(default_factory=lambda: [".exr"])
