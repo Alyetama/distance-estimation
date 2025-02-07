@@ -19,6 +19,7 @@ from custom_types import DetectionSamplingMethod, MultipleAnimalReduction, Sampl
 from utils import calibrate, calibrate_v0, crop, resize, exception_to_str, get_calibration_frame_dist, get_extension_agnostic_path, multi_file_extension_glob, blur_and_downsample
 from visualization import visualize_detection, visualize_farthest_calibration_frame
 from tqdm import tqdm
+from pathlib import Path
 
 
 @dataclass
@@ -71,6 +72,12 @@ def run(config: Config):
         transect_dirs = sorted(glob.glob(os.path.join(config.data_dir, "transects", "*/")))
         for transect_idx, transect_dir in enumerate(transect_dirs):
             print('Current transect dir:', transect_dir)
+            transect_signs = [int(Path(x).stem) for x in glob.glob(f'{transect_dir}calibration_frames/*')]
+            min_d = min(transect_signs)
+            max_d = max(transect_signs)
+            print('Min and max D:', min_d, max_d)
+            config.max_depth = max_d
+            config.min_depth = min_d
             transect_id = os.path.basename(os.path.normpath(transect_dir))
 
             yield StatusUpdate(transect_id, transect_idx, len(transect_dirs))

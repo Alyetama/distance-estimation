@@ -57,6 +57,7 @@ def visualize_farthest_calibration_frame_impl(data_dir, transect_id, farthest_ca
     plt.colorbar()
     plt.title("Final Calibration Frame Depth")
     os.makedirs(os.path.join(data_dir, "results", "calibration_arrays"), exist_ok=True)
+    os.makedirs(os.path.join(data_dir, "results", "calibration"), exist_ok=True)
     plt.savefig(
         os.path.join(data_dir, "results", "calibration", f"{transect_id}_calibration.jpg"),
         bbox_inches="tight",
