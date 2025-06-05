@@ -362,13 +362,14 @@ class DownloadableWeights:
         download_dir = os.path.join(dirs.user_cache_dir, "weights")
         filename = weights_url.split("/")[-1]
         filepath = os.path.join(download_dir, filename)
+        print(filepath)
         try:
             if os.path.exists(filepath):
                 assert md5sum is None or md5sum_from_filepath(filepath) == md5sum
                 return filepath
             else:
                 os.makedirs(download_dir, exist_ok=True)
-                urllib.request.urlretrieve(weights_url, filepath)
+                #urllib.request.urlretrieve(weights_url, filepath)
                 assert md5sum is None or md5sum_from_filepath(filepath) == md5sum
                 return filepath
         except Exception as e:

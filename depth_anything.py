@@ -19,7 +19,7 @@ class DepthAnything(DownloadableWeights):
         self._model_loaded = True
 
         weights_url = "https://github.com/timmh/Depth-Anything/releases/download/onnx_v0.1/depth_anything_metric_depth_outdoor.onnx"
-        wegiths_md5 = "cfca784a388778074c6d88cb6f687961"
+        wegiths_md5 = "d7af988dddd9930e226922220cb36142"
         weights_path = self.get_weights(weights_url, wegiths_md5)
 
         providers = get_onnxruntime_providers()

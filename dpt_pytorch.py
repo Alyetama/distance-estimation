@@ -12,12 +12,12 @@ class DPTPyTorch(DownloadableWeights):
         self._model_loaded = True
 
         import torch
-        self.model = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
+        self.model = torch.hub.load("intel-isl/MiDaS", 'DPT_Large')
         self.model = self.model.eval()
         self.transform = torch.hub.load("intel-isl/MiDaS", "transforms").dpt_transform
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-    
+
     def __call__(self, img, optimize=True):
         import torch
 
