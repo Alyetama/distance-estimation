@@ -31,13 +31,13 @@ def build_config_inputs(config, container, on_config_change):
         value_type = type(value)
 
         if value_type is float:
-            input = toga.NumberInput(default=value, step=Decimal("0.01"), on_change=lambda input, var=var: on_config_change(var, float(input.value)))
+            input = toga.NumberInput(value=value, step=Decimal("0.01"), on_change=lambda input, var=var: on_config_change(var, float(input.value)))
         elif value_type is int:
-            input = toga.NumberInput(default=value, step=1, on_change=lambda input, var=var: on_config_change(var, int(input.value)))
+            input = toga.NumberInput(value=value, step=1, on_change=lambda input, var=var: on_config_change(var, int(input.value)))
         elif value_type is bool:
-            input = toga.Switch("", is_on=value, on_toggle=lambda input, var=var: on_config_change(var, input.is_on))
+            input = toga.Switch("", value=value, on_change=lambda input, var=var: on_config_change(var, input.is_on))
         elif issubclass(value_type, Enum):
-            input = toga.Selection(items=[e for e in dir(type(value)) if not e.startswith("_")], on_select=lambda input, var=var, default_type=value_type: on_config_change(var, getattr(default_type, input.value)))
+            input = toga.Selection(items=[e for e in dir(type(value)) if not e.startswith("_")], on_change=lambda input, var=var, default_type=value_type: on_config_change(var, getattr(default_type, input.value)))
             input.value = value.name
         else:
             continue
@@ -116,7 +116,7 @@ def build(app: toga.App):
 
     data_dir_box = toga.Box()
     data_dir_box.style.padding = 15
-    data_dir_label = toga.TextInput(readonly=True, initial=config.data_dir)
+    data_dir_label = toga.TextInput(readonly=True, value=config.data_dir)
     data_dir_label.style.flex = 1
     data_dir_label.style.padding_left = 15
 
@@ -234,13 +234,18 @@ def cli(args):
 
 def main():
 
-    try:
-        # Close the splash screen.
-        import pyi_splash
-        pyi_splash.close()
-    except ImportError:
-        # Otherwise do nothing.
-        pass
+    # On Windows, if we're started from a command prompt, ATTACH_PARENT_PROCESS will attach to it.
+    # This allows a single executable to be both a console and a GUI app.
+    # We only want to do this if we're in CLI mode.
+    # A quick check of the args is needed before we properly parse them.
+    is_cli_mode = "--cli" in sys.argv
+    if is_cli_mode and sys.platform == "win32":
+        import ctypes
+        # ATTACH_PARENT_PROCESS = -1
+        if ctypes.windll.kernel32.AttachConsole(-1):
+            # Redirect stdout and stderr to the console.
+            sys.stdout = open("CONOUT$", "w")
+            sys.stderr = open("CONOUT$", "w")
 
     argparser = ArgumentParser()
     argparser.add_argument("--cli", action="store_true", help="Enables CLI operation and disables GUI")
@@ -265,7 +270,7 @@ def main():
             level=logging.INFO,
             format="%(asctime)s [%(levelname)s] %(message)s",
             handlers=[
-                logging.StreamHandler()
+                logging.StreamHandler(sys.stdout) # Explicitly use the (potentially new) sys.stdout
             ]
         )
         cli(args)
