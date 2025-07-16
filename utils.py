@@ -369,7 +369,7 @@ class DownloadableWeights:
                 return filepath
             else:
                 os.makedirs(download_dir, exist_ok=True)
-                #urllib.request.urlretrieve(weights_url, filepath)
+                urllib.request.urlretrieve(weights_url, filepath)
                 assert md5sum is None or md5sum_from_filepath(filepath) == md5sum
                 return filepath
         except Exception as e:

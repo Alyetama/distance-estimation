@@ -1,0 +1,19 @@
+#!/bin/bash
+
+ENV_NAME="dnd"
+PY_VERSION="3.11"
+conda deactivate
+conda create --name "$ENV_NAME" python=$PY_VERSION -y
+conda activate $ENV_NAME
+conda install ipykernel -y
+python -m ipykernel install --name "$ENV_NAME" --display-name "Python ($ENV_NAME)" --user
+pip install matplotlib opencv-python pandas
+pip3 install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128
+pip install ultralytics loguru
+pip install onnxruntime scikit-learn
+sudo apt update
+sudo apt install libgirepository1.0-dev libcairo2-dev gir1.2-gtk-3.0
+pip install PyGObject==3.50.0
+pip install toga
+pip install onnxruntime-gpu
+pip install pyinstaller platformdirs timm

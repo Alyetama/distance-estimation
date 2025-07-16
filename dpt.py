@@ -23,9 +23,13 @@ class DPT(DownloadableWeights):
         weights_path = self.get_weights(weights_url, weights_md5)
 
         providers = get_onnxruntime_providers()
+        so = onnxruntime.SessionOptions()
+        so.log_severity_level = 1
+
         try:
             self.session = onnxruntime.InferenceSession(
                 weights_path,
+                sess_options=so,
                 providers=providers,
             )
         except Exception as e:
@@ -33,6 +37,7 @@ class DPT(DownloadableWeights):
             logging.warn(f"Failed to create onnxruntime inference session with providers '{providers_str}', trying 'CPUExecutionProvider'")
             self.session = onnxruntime.InferenceSession(
                 weights_path,
+                sess_options=so,
                 providers=["CPUExecutionProvider"],
             )
 

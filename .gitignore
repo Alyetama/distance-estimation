@@ -3,3 +3,5 @@ __pycache__
 /dist/
 .DS_Store
 c.sh
+.ipynb_checkpoints/
+
