@@ -16,7 +16,7 @@ from metric3d import Metric3D
 from megadetector import MegaDetector, MegaDetectorLabel
 from sam import SAM
 from custom_types import DetectionSamplingMethod, MultipleAnimalReduction, SampleFrom, DepthEstimationModel
-from utils import calibrate, calibrate_v0, crop, resize, exception_to_str, get_calibration_frame_dist, get_extension_agnostic_path, multi_file_extension_glob, blur_and_downsample, imread
+from utils import calibrate, calibrate_v0, piecewise_linear_calibration, crop, resize, exception_to_str, get_calibration_frame_dist, get_extension_agnostic_path, multi_file_extension_glob, blur_and_downsample, imread
 from visualization import visualize_detection, visualize_farthest_calibration_frame
 
 
@@ -84,7 +84,9 @@ def run(config: Config, gui=False):
             try:
                 exp = -1 if config.calibrate_metric else 1
                 calibration_frames = {}
-                farthest_calibration_frame_disp = None
+                farthest_calibration_frame_disp = None  # inverse depth map
+                farthest_calibration_frame_disp_raw = None  # raw model output (aligned target)
+                calibration_map = None
 
                 if config.depth_estimation_model != DepthEstimationModel.DEPTH_AHYTHING_METRIC:
                     for calibration_frame_filename in (
@@ -125,40 +127,47 @@ def run(config: Config, gui=False):
                     calibration_frames = OrderedDict(sorted(calibration_frames.items(), key=lambda kv: kv[0]))
 
                     # get disparity of the farthest calibration frame
-                    farthest_calibration_frame_disp = list(calibration_frames.values())[-1] if len(calibration_frames) > 0 else None
+                    farthest_calibration_frame_disp_raw = list(calibration_frames.values())[-1] if len(calibration_frames) > 0 else None
 
                     try:
-                        x,y  = [], []
+                        x, y = [], []
+                        calibrated_frames = {}
                         for dist, disp in calibration_frames.items():
                             yield
-                            disp = resize(disp, farthest_calibration_frame_disp.shape)
+                            disp = resize(disp, farthest_calibration_frame_disp_raw.shape)
                             if config.calibrate_metric:
                                 disp = np.clip(disp, eps, np.inf)
                             disp_calibrated = do_calibrate(
                                 disp ** exp,
-                                farthest_calibration_frame_disp ** exp,
+                                farthest_calibration_frame_disp_raw ** exp,
                                 config.calibration_regression_method,
                             )(disp.data ** exp) ** exp
                             disp_calibrated = np.ma.masked_where(disp.mask, disp_calibrated)
+                            calibrated_frames[dist] = disp_calibrated
 
-                            x.append(np.median(disp_calibrated.data[disp_calibrated.mask]))
-                            y.append(dist ** -1)
+                            x.append(float(np.median(disp_calibrated.data[disp_calibrated.mask])))
+                            y.append(float(dist ** -1))
 
-                        calibration = do_calibrate(np.array(x) ** exp, np.array(y) ** exp, config.calibration_regression_method)
+                        calibration_base = piecewise_linear_calibration(np.array(x) ** exp, np.array(y) ** exp, eps=eps)
+
+                        def calibration_map(data, exp=exp, calibration_base=calibration_base):
+                            return calibration_base(np.asarray(data) ** exp) ** exp
+
                         farthest_calibration_frame_disp = np.ma.masked_where(
-                            farthest_calibration_frame_disp.mask,
-                            calibration(farthest_calibration_frame_disp.data ** exp) ** exp,
+                            farthest_calibration_frame_disp_raw.mask,
+                            calibration_map(farthest_calibration_frame_disp_raw.data),
                         )
                     except Exception as e:
-                        calibration = None
+                        calibration_map = None
                         farthest_calibration_frame_disp = None
+                        farthest_calibration_frame_disp_raw = None
                         if not os.path.exists(os.path.join(transect_dir, "detection_frames_depth")):
                             logging.warn(f"Failed calibrating transect '{transect_id}' due to exception: {exception_to_str(e)}. Skipping all distance estimations for observations in this transect.")
 
                     yield
 
-                    if config.make_figures and farthest_calibration_frame_disp is not None:
-                        visualize_farthest_calibration_frame(config.data_dir, transect_id, farthest_calibration_frame_disp, config.min_depth, config.max_depth)
+                if config.make_figures and farthest_calibration_frame_disp is not None:
+                    visualize_farthest_calibration_frame(config.data_dir, transect_id, farthest_calibration_frame_disp, config.min_depth, config.max_depth)
 
             except Exception as e:
                 exception_str = exception_to_str(e)
@@ -259,12 +268,20 @@ def run(config: Config, gui=False):
                                 if config.calibration_mask_animals:
                                     mask = mask | animal_mask
                                 disp_masked = np.ma.masked_where(mask, disp ** exp)
+                                farthest_disp_raw_masked = np.ma.masked_where(mask, farthest_calibration_frame_disp_raw ** exp)
                                 if config.calibrate_blur:
-                                    disp = do_calibrate(blur_and_downsample(disp_masked), blur_and_downsample(farthest_calibration_frame_disp) ** exp, config.calibration_regression_method)(disp ** exp)
+                                    disp_aligned = do_calibrate(
+                                        blur_and_downsample(disp_masked),
+                                        blur_and_downsample(farthest_disp_raw_masked),
+                                        config.calibration_regression_method,
+                                    )(disp ** exp) ** exp
                                 else:
-                                    disp = do_calibrate(disp_masked, farthest_calibration_frame_disp ** exp, config.calibration_regression_method)(disp ** exp)
-                                if config.calibrate_metric:
-                                    disp = np.clip(disp, config.min_depth, config.max_depth) ** -1
+                                    disp_aligned = do_calibrate(
+                                        disp_masked,
+                                        farthest_disp_raw_masked,
+                                        config.calibration_regression_method,
+                                    )(disp ** exp) ** exp
+                                disp = calibration_map(disp_aligned)
                             elif config.sample_from == SampleFrom.REFERENCE:
                                 disp = farthest_calibration_frame_disp
                             else:

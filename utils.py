@@ -181,6 +181,67 @@ def calibrate(x, y, method, n=2, poly_deg=5):
             return p
 
 
+def piecewise_linear_calibration(x, y, eps=1e-6):
+    """
+    Create a monotonic piecewise-linear calibration function y = f(x).
+
+    - Interpolates linearly between calibration points.
+    - Extrapolates linearly using the first/last segment.
+    - Clips outputs to be >= eps (avoids negative/zero inverse depths).
+    """
+    x = np.asarray(x, dtype=np.float64).reshape(-1)
+    y = np.asarray(y, dtype=np.float64).reshape(-1)
+    if len(x) == 0 or len(y) == 0 or len(x) != len(y):
+        raise ValueError(f"Invalid calibration points: len(x)={len(x)} len(y)={len(y)}")
+
+    if len(x) == 1:
+        y0 = float(y[0])
+
+        def f(data):
+            data = np.asarray(data, dtype=np.float64)
+            return np.full_like(data, max(eps, y0), dtype=np.float64)
+
+        return f
+
+    sort_idx = np.argsort(x)
+    x_sorted = x[sort_idx]
+    y_sorted = y[sort_idx]
+
+    # Merge duplicate x values by averaging y (rare, but avoids division by zero in slopes).
+    unique_x, inverse = np.unique(x_sorted, return_inverse=True)
+    if len(unique_x) != len(x_sorted):
+        summed_y = np.zeros(len(unique_x), dtype=np.float64)
+        counts = np.zeros(len(unique_x), dtype=np.int64)
+        for i, group in enumerate(inverse):
+            summed_y[group] += y_sorted[i]
+            counts[group] += 1
+        x_sorted = unique_x
+        y_sorted = summed_y / np.maximum(counts, 1)
+
+    if len(x_sorted) == 1:
+        y0 = float(y_sorted[0])
+
+        def f(data):
+            data = np.asarray(data, dtype=np.float64)
+            return np.full_like(data, max(eps, y0), dtype=np.float64)
+
+        return f
+
+    left_dx = float(x_sorted[1] - x_sorted[0])
+    right_dx = float(x_sorted[-1] - x_sorted[-2])
+    left_slope = float((y_sorted[1] - y_sorted[0]) / left_dx) if left_dx != 0 else 0.0
+    right_slope = float((y_sorted[-1] - y_sorted[-2]) / right_dx) if right_dx != 0 else 0.0
+
+    def f(data):
+        data = np.asarray(data, dtype=np.float64)
+        out = np.interp(data, x_sorted, y_sorted)
+        out = np.where(data < x_sorted[0], y_sorted[0] + (data - x_sorted[0]) * left_slope, out)
+        out = np.where(data > x_sorted[-1], y_sorted[-1] + (data - x_sorted[-1]) * right_slope, out)
+        return np.clip(out, eps, np.inf)
+
+    return f
+
+
 def calibrate_v0(x, y, method, n=2, poly_deg=5):
     with random_seed_manager():
 
