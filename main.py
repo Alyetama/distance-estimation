@@ -29,8 +29,7 @@ from config import Config
 from utils import is_standalone, exception_to_str, EnumActionLowerCase, dirs
 
 import warnings
-warnings.filterwarnings("ignore")
-
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def var_to_label(var: str):
     return " ".join(w[0].upper() + w[1:] for w in var.lower().split("_"))

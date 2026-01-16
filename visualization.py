@@ -5,6 +5,8 @@ import atexit
 import numpy as np
 import cv2
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 process_queue_max_len = min(8, os.cpu_count())
 process_queue = Queue(process_queue_max_len)
