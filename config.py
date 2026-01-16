@@ -7,8 +7,8 @@ from custom_types import DetectionSamplingMethod, SampleFrom, MultipleAnimalRedu
 class Config:
     # general parameters
     data_dir: str = ""  # where the data is stored
-    min_depth: float = 1.  # minimum sampled distance
-    max_depth: float = 25.  # maximum sampled distance
+    min_depth: float = 0.2  # minimum sampled distance
+    max_depth: float = 50.  # maximum sampled distance
 
     # cropping parameters
     crop_top: int = 0  # how many pixels to crop from the top of the images

@@ -4,4 +4,4 @@ __pycache__
 .DS_Store
 c.sh
 .ipynb_checkpoints/
-
+weights/depth_anything_metric_depth_outdoor.onnx.1

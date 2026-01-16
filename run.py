@@ -76,8 +76,8 @@ def run(config: Config):
             # min_d = min(transect_signs)
             max_d = max(transect_signs)
             # print('Min and max D:', min_d, max_d)
-            config.max_depth = max_d
-            config.min_depth = 0.1  # Hardcoded value
+            config.max_depth = 50  # Hardcoded value
+            config.min_depth = 0.2  # Hardcoded value
             transect_id = os.path.basename(os.path.normpath(transect_dir))
 
             yield StatusUpdate(transect_id, transect_idx, len(transect_dirs))
